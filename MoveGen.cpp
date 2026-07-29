@@ -1,4 +1,4 @@
-#include "MoveGen.h" //test
+#include "MoveGen.h"
 #include <cmath>
 #include <iostream>
 
