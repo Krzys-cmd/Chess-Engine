@@ -41,9 +41,6 @@ int Search::negamax(int kolor, int depth, int polRuch, int alpha, int beta , Mov
         if (minalCzas()) return 0;
     }
   if (przerwane) return 0;
-  if (board.czyRemis50Ruchow() || board.czyPowtorzenieTrzykrotne()) {
-        return 0;
-   }
 
  std::vector<Move> ruchy;
  gen.generateLegal(kolor, ruchy);
@@ -56,6 +53,11 @@ int Search::negamax(int kolor, int depth, int polRuch, int alpha, int beta , Mov
     if(szach) return -(MatWartosc - polRuch);
     else return 0;
  }
+ if (board.czyRemis50Ruchow() || board.czyPowtorzenieTrzykrotne()) {
+        return 0;
+   }
+
+
  if(depth == 0){
     return ocenPozycje(kolor);
  }

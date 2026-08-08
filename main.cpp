@@ -8,8 +8,8 @@ int main()
 {
     Board board;
     MoveGen gen(board);
-    Search search(board, gen);
-    UCI uci(board, gen, search);
+    Search ser(board, gen);
+    UCI uci(board, gen, ser);
 
     uci.uruchomPetle();
 

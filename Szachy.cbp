@@ -44,9 +44,7 @@
 		<Unit filename="Search.h">
 			<Option target="&lt;{~None~}&gt;" />
 		</Unit>
-		<Unit filename="UCI.cpp">
-			<Option target="&lt;{~None~}&gt;" />
-		</Unit>
+		<Unit filename="UCI.cpp" />
 		<Unit filename="UCI.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="pferty.h" />
