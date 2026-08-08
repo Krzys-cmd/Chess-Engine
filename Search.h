@@ -23,6 +23,8 @@ class Search {
 
     int ocenPozycje(int kolor) const;
 
+    int wartoscRuchuMVVLVA(const Move& m) const;
+
     std::chrono::steady_clock::time_point czasStartu;
     long long limitCzasuMs = 0;
     bool przerwane = false;

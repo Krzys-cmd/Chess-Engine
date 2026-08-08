@@ -1,5 +1,5 @@
 #include "Search.h"
-
+#include <algorithm>
 
 Search::Search(Board& board, MoveGen& gen) : board(board), gen(gen) {}
 
@@ -22,6 +22,15 @@ int Search::ocenPozycje(int kolor) const{
     else suma -= wartosc;
  }
  return suma;
+}
+
+int Search::wartoscRuchuMVVLVA(const Move& m) const{
+  if(m.ktoraFiguraZbita == EMPTY) return 0;
+
+  int wartoscOfiary = wartosciFigur[m.ktoraFiguraZbita];
+  int wartoscAtakujacego = wartosciFigur[m.ktoraFigura];
+
+  return wartoscOfiary * 100 - wartoscAtakujacego;
 }
 
 bool Search::minalCzas(){
@@ -62,6 +71,10 @@ int Search::negamax(int kolor, int depth, int polRuch, int alpha, int beta , Mov
     return ocenPozycje(kolor);
  }
 
+ std::sort(ruchy.begin(), ruchy.end(), [this](const Move& a, const Move& b){ //lambda jako krytrium porownawcze w sort
+  return wartoscRuchuMVVLVA(a) > wartoscRuchuMVVLVA(b);
+ });
+
  int najlepszy = -inf;
 
  for(Move& m : ruchy){
@@ -100,7 +113,6 @@ Move Search::szukajNajlepszegoRuchu(int kolor, int depth) {
 
     return najlepszyRuch;
 }
-
 
 Move Search::szukajRuchWCzasie(int kolor, long long limitCzasuMsParam) {
     czasStartu = std::chrono::steady_clock::now();
