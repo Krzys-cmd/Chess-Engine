@@ -169,7 +169,6 @@ Taki układ referencji (a nie kopii) gwarantuje, że wszystkie komponenty zawsze
 Silnik posiada w pełni zweryfikowaną (testami **perft**) reprezentację planszy i generator ruchów, działające przeszukiwanie Negamax z alfa-beta oraz pełne podłączenie do protokołu UCI — może już grać partie w zewnętrznych GUI. Kolejne etapy rozwoju skupiają się na sile gry:
 
 - [ ] **Quiescence search** — rozszerzenie oceny liścia drzewa o dogrywanie bić, eliminujące efekt horyzontu przy taktycznych wymianach
-- [ ] Move ordering (sortowanie ruchów, np. MVV-LVA) dla zwiększenia skuteczności obcinania alfa-beta
 - [ ] Piece-Square Tables — ocena pozycyjna figur, nie tylko materiał
 - [ ] Tablica transpozycji (Zobrist hashing)
 - [ ] Null-move pruning i Late Move Reduction (LMR)
