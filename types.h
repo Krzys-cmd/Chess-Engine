@@ -1,19 +1,17 @@
 #pragma once
 
-//kolory graczy
+//player color
 enum Color { WHITE, BLACK, COLOR_NONE };
 
-//typy figur
 enum PieceType { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, PIECE_NONE };
 
-//figury(kolor + typ)
+//peice (type + color)
 enum Piece {
-    EMPTY = 0, // pole bez figury
-    W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING, //biale 1-6
-    B_PAWN, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING  //czarne 7-12
+    EMPTY = 0,
+    W_PAWN, W_KNIGHT, W_BISHOP, W_ROOK, W_QUEEN, W_KING, //white 1-6
+    B_PAWN, B_KNIGHT, B_BISHOP, B_ROOK, B_QUEEN, B_KING  //black 7-12
 };
 
-//pola na planszy (indeksy 0-63), SQ_NONE = 64 czyli blad poza plansza
 enum Square {
     A1 = 0, B1, C1, D1, E1, F1, G1, H1,
     A2, B2, C2, D2, E2, F2, G2, H2,
@@ -26,6 +24,6 @@ enum Square {
     SQ_NONE
 };
 
-inline int przeciwnyKolor(int kolor) {
-    return (kolor == WHITE) ? BLACK : WHITE;
+inline int getOppositeColor(int color) {
+    return (color == WHITE) ? BLACK : WHITE;
 }

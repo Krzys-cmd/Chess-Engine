@@ -7,111 +7,109 @@
 #include <cctype>
 #include <chrono>
 #include <cstdint>
+#include <iomanip>
 
 
-// Rekurencyjne zliczanie węzłów
-uint64_t perft(int depth, Board& board, MoveGen& moveGen, int kolor) {
+//knots count
+uint64_t perft(int depth, Board& board, MoveGen& moveGen, int color) {
     if (depth == 0) return 1ULL;
 
     uint64_t nodes = 0;
 
-    std::vector<Move> legalneRuchy;
-    moveGen.generateLegal(kolor, legalneRuchy);
+    std::vector<Move> legalMoves;
+    moveGen.generateLegal(color, legalMoves);
 
-    for (Move& ruch : legalneRuchy) {
-        board.MakeMove(ruch);
-        nodes += perft(depth - 1, board, moveGen, przeciwnyKolor(kolor));
-        board.UnmakeMove(ruch);
+    for (Move& move : legalMoves) {
+        board.makeMove(move);
+        nodes += perft(depth - 1, board, moveGen, getOppositeColor(color));
+        board.unmakeMove(move);
     }
 
     return nodes;
 }
 
-// Główna funkcja wykonująca test dla kolejnych głębokości
-void uruchomPerftTest(int maxGlebokosc, Board& board, MoveGen& moveGen, int kolor) {
-    for (int d = 1; d <= maxGlebokosc; ++d) {
+//deepr testing
+void runPerftTest(int maxDepth, Board& board, MoveGen& moveGen, int color) {
+    for (int d = 1; d <= maxDepth; ++d) {
         auto start = std::chrono::high_resolution_clock::now();
 
-        uint64_t nodes = perft(d, board, moveGen, kolor);
+        uint64_t nodes = perft(d, board, moveGen, color);
 
         auto end = std::chrono::high_resolution_clock::now();
-        double sekundy = std::chrono::duration<double>(end - start).count();
+        double seconds = std::chrono::duration<double>(end - start).count();
 
-        // Wypisanie w wybranym formacie z czasem w sekundach
+        //time in sec
         std::cout << "Perft(" << d << ") = " << nodes
-                  << "   (czas: " << std::fixed << std::setprecision(4) << sekundy << " s)\n";
+                  << "    (czas: " << std::fixed << std::setprecision(4) << seconds << " s)\n";
     }
 }
 
-int Board::wczytajFEN(const std::string& fen) {
-    // 1. Resetowanie planszy i praw
-    for (int i = 0; i < 64; i++) szachownica[i] = EMPTY;
-    prawaBialeKrotka = false;
-    prawaBialeDluga = false;
-    prawaCzarneKrotka = false;
-    prawaCzarneDluga = false;
+int Board::loadFEN(const std::string& fen) {
+    //reset of chessboard and flags
+    for (int i = 0; i < 64; i++) chessboard[i] = EMPTY;
+    whiteKingsideCastlingRights = false;
+    whiteQueensideCastlingRights = false;
+    blackKingsideCastlingRights = false;
+    blackQueensideCastlingRights = false;
     enPassantSquare = 64;
 
     std::istringstream ss(fen);
-    std::string ustawienieFigur, aktywnyKolor, prawaRoszad, poleEnPassant;
-    ss >> ustawienieFigur >> aktywnyKolor >> prawaRoszad >> poleEnPassant;
+    std::string piecePlacement, activeColor, castlingRights, enPassantTarget;
+    ss >> piecePlacement >> activeColor >> castlingRights >> enPassantTarget;
 
-    // 2. Rozmieszczenie figur (FEN czyta od rzêdu 8 do 1)
-    int rank = 7; // Zaczynamy od 8. rzêdu (indeks 7)
-    int file = 0; // Zaczynamy od kolumny a (indeks 0)
+    //fen piece placement
+    int rank = 7; //8 row (7 inedx)
+    int file = 0; //a col (index 0)
 
-    for (char c : ustawienieFigur) {
+    for (char c : piecePlacement) {
         if (c == '/') {
-            rank--;      // Przejœcie do rzêdu ni¿ej
-            file = 0;    // Reset kolumny
+            rank--;      //lower row
+            file = 0;    //col reset
         }
         else if (isdigit(c)) {
-            file += (c - '0'); // Puste pola - przesuwamy wskaŸnik kolumny
+            file += (c - '0');
         }
         else {
             int square = rank * 8 + file;
-            int figura = EMPTY;
+            int piece = EMPTY;
 
-            // Mapowanie znaków na figury
+            //letters to piece
             switch (c) {
-                case 'P': figura = W_PAWN; break;
-                case 'N': figura = W_KNIGHT; break;
-                case 'B': figura = W_BISHOP; break;
-                case 'R': figura = W_ROOK; break;
-                case 'Q': figura = W_QUEEN; break;
-                case 'K': figura = W_KING; break;
-                case 'p': figura = B_PAWN; break;
-                case 'n': figura = B_KNIGHT; break;
-                case 'b': figura = B_BISHOP; break;
-                case 'r': figura = B_ROOK; break;
-                case 'q': figura = B_QUEEN; break;
-                case 'k': figura = B_KING; break;
+                case 'P': piece = W_PAWN; break;
+                case 'N': piece = W_KNIGHT; break;
+                case 'B': piece = W_BISHOP; break;
+                case 'R': piece = W_ROOK; break;
+                case 'Q': piece = W_QUEEN; break;
+                case 'K': piece = W_KING; break;
+                case 'p': piece = B_PAWN; break;
+                case 'n': piece = B_KNIGHT; break;
+                case 'b': piece = B_BISHOP; break;
+                case 'r': piece = B_ROOK; break;
+                case 'q': piece = B_QUEEN; break;
+                case 'k': piece = B_KING; break;
             }
 
             if (square >= 0 && square < 64) {
-                szachownica[square] = figura;
+                chessboard[square] = piece;
             }
             file++;
         }
     }
 
-    // 3. Prawa do roszady
-    if (prawaRoszad != "-") {
-        for (char znak : prawaRoszad) {
-            if (znak == 'K') prawaBialeKrotka = true;
-            else if (znak == 'Q') prawaBialeDluga = true;
-            else if (znak == 'k') prawaCzarneKrotka = true;
-            else if (znak == 'q') prawaCzarneDluga = true;
+    if (castlingRights != "-") {
+        for (char character : castlingRights) {
+            if (character == 'K') whiteKingsideCastlingRights = true;
+            else if (character == 'Q') whiteQueensideCastlingRights = true;
+            else if (character == 'k') blackKingsideCastlingRights = true;
+            else if (character == 'q') blackQueensideCastlingRights = true;
         }
     }
 
-    // 4. Pole En Passant (np. "e3")
-    if (poleEnPassant != "-") {
-        int epFile = poleEnPassant[0] - 'a';
-        int epRank = poleEnPassant[1] - '1';
+    if (enPassantTarget != "-") {
+        int epFile = enPassantTarget[0] - 'a';
+        int epRank = enPassantTarget[1] - '1';
         enPassantSquare = epRank * 8 + epFile;
     }
 
-    // 5. Zwracamy kolor (w = WHITE / b = BLACK)
-    return (aktywnyKolor == "w") ? WHITE : BLACK;
+    return (activeColor == "w") ? WHITE : BLACK;
 }

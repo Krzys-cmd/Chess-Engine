@@ -3,148 +3,151 @@
 
 Search::Search(Board& board, MoveGen& gen) : board(board), gen(gen) {}
 
-static const int wartosciFigur[13] = {
+static const int pieceValues[13] = {
     0,
     100, 320, 330, 500, 900, 0,
     100, 320, 330, 500, 900, 0
 };
 
-int Search::ocenPozycje(int kolor) const{
- int suma = 0;
+int Search::evaluatePosition(int color) const{
+ int sum = 0;
  for(int i = 0; i < 64; i++){
-    int figura = board.szachownica[i];
-    if(figura == EMPTY) continue;
+    int piece = board.chessboard[i];
+    if(piece == EMPTY) continue;
 
-    int wartosc = wartosciFigur[figura];
-    int kolorFigury = (figura >= W_PAWN && figura <= W_KING) ? WHITE : BLACK;
+    int value = pieceValues[piece];
+    int pieceColor = (piece >= W_PAWN && piece <= W_KING) ? WHITE : BLACK;
 
-    if(kolorFigury == kolor) suma += wartosc;
-    else suma -= wartosc;
+    if(pieceColor == color) sum += value;
+    else sum -= value;
  }
- return suma;
+ return sum;
 }
 
-int Search::wartoscRuchuMVVLVA(const Move& m) const{
-  if(m.ktoraFiguraZbita == EMPTY) return 0;
+int Search::getMVVLVAMoveValue(const Move& m) const{
+  if(m.capturedPiece == EMPTY) return 0;
 
-  int wartoscOfiary = wartosciFigur[m.ktoraFiguraZbita];
-  int wartoscAtakujacego = wartosciFigur[m.ktoraFigura];
+  int victimValue = pieceValues[m.capturedPiece];
+  int attackerValue = pieceValues[m.movedPiece];
 
-  return wartoscOfiary * 100 - wartoscAtakujacego;
+  return victimValue * 100 - attackerValue;
 }
 
-bool Search::minalCzas(){
-if(przerwane) return true;
-auto teraz = std::chrono::steady_clock::now();
-long long minelo = std::chrono::duration_cast<std::chrono::milliseconds>(teraz - czasStartu).count();
-if (minelo >= limitCzasuMs) {
-        przerwane = true;
+bool Search::isTimeUp(){
+if(interrupted) return true;
+auto now = std::chrono::steady_clock::now();
+long long elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
+if (elapsed >= timeLimitMs) {
+        interrupted = true;
     }
-    return przerwane;
+    return interrupted;
 }
 
-int Search::negamax(int kolor, int depth, int polRuch, int alpha, int beta , Move* najlepszyRuchOut){
- wezly++;
+int Search::negamax(int color, int depth, int ply, int alpha, int beta , Move* bestMoveOut){
+ nodes++;
 
-  if ((wezly & 2047) == 0) { //operacja bitowa dla optymalizacji
-        if (minalCzas()) return 0;
+  if ((nodes & 2047) == 0) { //bit operation for optimization
+        if (isTimeUp()) return 0;
     }
-  if (przerwane) return 0;
+  if (interrupted) return 0;
 
- std::vector<Move> ruchy;
- gen.generateLegal(kolor, ruchy);
+ std::vector<Move> moves;
 
- if(ruchy.empty()){
-    int wrog = przeciwnyKolor(kolor);
-    int poleKrol = board.znajdzKrola(kolor);
-    bool szach = board.czyPoleJestAtakowane(poleKrol,wrog);
-
-    if(szach) return -(MatWartosc - polRuch);
-    else return 0;
- }
- if (board.czyRemis50Ruchow() || board.czyPowtorzenieTrzykrotne()) {
+  if (board.is50MoveDraw() || board.isThreefoldRepetition()) {
         return 0;
    }
 
+ gen.generateLegal(color, moves);
+
+ if(moves.empty()){
+    int enemy = getOppositeColor(color);
+    int kingSquare = board.findKing(color);
+    bool check = board.isSquareAttacked(kingSquare, enemy);
+
+    if(check) return -(mateValue - ply);
+    else return 0;
+ }
+
+
 
  if(depth == 0){
-    return ocenPozycje(kolor);
+    return evaluatePosition(color);
  }
 
- std::sort(ruchy.begin(), ruchy.end(), [this](const Move& a, const Move& b){ //lambda jako krytrium porownawcze w sort
-  return wartoscRuchuMVVLVA(a) > wartoscRuchuMVVLVA(b);
+ std::sort(moves.begin(), moves.end(), [this](const Move& a, const Move& b){ //using a lambda as the sort key
+  return getMVVLVAMoveValue(a) > getMVVLVAMoveValue(b);
  });
 
- int najlepszy = -inf;
+ int best = -inf;
 
- for(Move& m : ruchy){
-    board.MakeMove(m);
-    board.zapiszPozycje(przeciwnyKolor(kolor));
+ for(Move& m : moves){
+    board.makeMove(m);
+    board.savePosition(getOppositeColor(color));
 
-    int wynik = - negamax(przeciwnyKolor(kolor), depth - 1, polRuch + 1, -beta, -alpha);
+    int score = - negamax(getOppositeColor(color), depth - 1, ply + 1, -beta, -alpha);
 
-    board.wycofajPozycje();
-    board.UnmakeMove(m);
+    board.undoPosition();
+    board.unmakeMove(m);
 
-    if(przerwane) break;
+    if(interrupted) break;
 
-    if(wynik > najlepszy){
-      najlepszy = wynik;
-      if(najlepszyRuchOut != nullptr){
-        *najlepszyRuchOut = m;
+    if(score > best){
+      best = score;
+      if(bestMoveOut != nullptr){
+        *bestMoveOut = m;
       }
     }
-    if(wynik > alpha) alpha = wynik;
+    if(score > alpha) alpha = score;
     if(alpha >= beta) break;
  }
- return najlepszy;
+ return best;
 }
 
-Move Search::szukajNajlepszegoRuchu(int kolor, int depth) {
-    przerwane = false;
-    limitCzasuMs = 1LL << 40;
-    czasStartu = std::chrono::steady_clock::now();
+Move Search::findBestMove(int color, int depth) {
+    interrupted = false;
+    timeLimitMs = 1LL << 40;
+    startTime = std::chrono::steady_clock::now();
 
-    Move najlepszyRuch{};
-    int ocena = negamax(kolor, depth, 0, -inf, inf, &najlepszyRuch);
+    Move bestMove{};
+    int score = negamax(color, depth, 0, -inf, inf, &bestMove);
 
-    std::cout << "info depth " << depth << " score cp " << ocena
-               << " nodes " << wezly << std::endl;
+    std::cout << "info depth " << depth << " score cp " << score
+              << " nodes " << nodes << std::endl;
 
-    return najlepszyRuch;
+    return bestMove;
 }
 
-Move Search::szukajRuchWCzasie(int kolor, long long limitCzasuMsParam) {
-    czasStartu = std::chrono::steady_clock::now();
-    limitCzasuMs = limitCzasuMsParam;
-    przerwane = false;
-    wezly = 0;
+Move Search::searchTimedMove(int color, long long timeLimitMsParam) {
+    startTime = std::chrono::steady_clock::now();
+    timeLimitMs = timeLimitMsParam;
+    interrupted = false;
+    nodes = 0;
 
-    Move najlepszyOgolem{};
-    int gleb = 1;
+    Move overallBest{};
+    int depth = 1;
 
     while (true) {
-        Move najlepszyTejGlebokosci{};
-        int ocena = negamax(kolor, gleb, 0, -inf, inf, &najlepszyTejGlebokosci);
+        Move bestAtCurrentDepth{};
+        int score = negamax(color, depth, 0, -inf, inf, &bestAtCurrentDepth);
 
-        if (przerwane) break;
+        if (interrupted) break;
 
-        najlepszyOgolem = najlepszyTejGlebokosci;
+        overallBest = bestAtCurrentDepth;
 
-        auto teraz = std::chrono::steady_clock::now();
-        long long czasMs = std::chrono::duration_cast<std::chrono::milliseconds>(teraz - czasStartu).count();
-        long long nps = (czasMs > 0) ? (wezly * 1000 / czasMs) : 0;
+        auto now = std::chrono::steady_clock::now();
+        long long timeMs = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
+        long long nps = (timeMs > 0) ? (nodes * 1000 / timeMs) : 0;
 
-        std::cout << "info depth " << gleb
-                   << " score cp " << ocena
-                   << " nodes " << wezly
-                   << " nps " << nps
-                   << " time " << czasMs
-                   << std::endl;
+        std::cout << "info depth " << depth
+                  << " score cp " << score
+                  << " nodes " << nodes
+                  << " nps " << nps
+                  << " time " << timeMs
+                  << std::endl;
 
-        gleb++;
-        if (gleb > 60) break;
+        depth++;
+        if (depth > 60) break;
     }
 
-    return najlepszyOgolem;
+    return overallBest;
 }

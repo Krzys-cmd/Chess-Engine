@@ -2,59 +2,59 @@
 #include <iostream>
 
 Board::Board(){
-//ustaniwenie claej tabeli na zero
+//swtting array to zero
      for(int i = 0; i < 64; i++){
-        szachownica[i] = 0;
+        chessboard[i] = 0;
      }
 }
 
-void Board::StartPostions(){ //startowy uklad szachownicy
+void Board::startPositions(){
     for (int i = 0; i < 64; ++i) {
-        szachownica[i] = EMPTY;
+        chessboard[i] = EMPTY;
     }
 
     //biale figury
-    szachownica[A1] = W_ROOK;
-    szachownica[B1] = W_KNIGHT;
-    szachownica[C1] = W_BISHOP;
-    szachownica[D1] = W_QUEEN;
-    szachownica[E1] = W_KING;
-    szachownica[F1] = W_BISHOP;
-    szachownica[G1] = W_KNIGHT;
-    szachownica[H1] = W_ROOK;
+    chessboard[A1] = W_ROOK;
+    chessboard[B1] = W_KNIGHT;
+    chessboard[C1] = W_BISHOP;
+    chessboard[D1] = W_QUEEN;
+    chessboard[E1] = W_KING;
+    chessboard[F1] = W_BISHOP;
+    chessboard[G1] = W_KNIGHT;
+    chessboard[H1] = W_ROOK;
 
-    //biale piony
+    //white pawns
     for (int i = A2; i <= H2; ++i) {
-        szachownica[i] = W_PAWN;
+        chessboard[i] = W_PAWN;
     }
-    //czarne piony
+    //black pawns
     for (int i = A7; i <= H7; ++i) {
-        szachownica[i] = B_PAWN;
+        chessboard[i] = B_PAWN;
     }
 
-    //czarne figury
-    szachownica[A8] = B_ROOK;
-    szachownica[B8] = B_KNIGHT;
-    szachownica[C8] = B_BISHOP;
-    szachownica[D8] = B_QUEEN;
-    szachownica[E8] = B_KING;
-    szachownica[F8] = B_BISHOP;
-    szachownica[G8] = B_KNIGHT;
-    szachownica[H8] = B_ROOK;
+    //black peices
+    chessboard[A8] = B_ROOK;
+    chessboard[B8] = B_KNIGHT;
+    chessboard[C8] = B_BISHOP;
+    chessboard[D8] = B_QUEEN;
+    chessboard[E8] = B_KING;
+    chessboard[F8] = B_BISHOP;
+    chessboard[G8] = B_KNIGHT;
+    chessboard[H8] = B_ROOK;
 
-    //flagi roszad
+    //flags
     enPassantSquare = 64;
-    prawaBialeKrotka  = true;
-    prawaBialeDluga   = true;
-    prawaCzarneKrotka = true;
-    prawaCzarneDluga  = true;
+    whiteKingsideCastlingRights  = true;
+    whiteQueensideCastlingRights = true;
+    blackKingsideCastlingRights  = true;
+    blackQueensideCastlingRights = true;
  }
 
 void Board::printBoard() const{
   const char pieceChars[] = {
         '.', // EMPTY = 0
-        'P', 'N', 'B', 'R', 'Q', 'K', // Biale: 1 - 6
-        'p', 'n', 'b', 'r', 'q', 'k'  // Czarne: 7 - 12
+        'P', 'N', 'B', 'R', 'Q', 'K', // white: 1 - 6
+        'p', 'n', 'b', 'r', 'q', 'k'  // black: 7 - 12
     };
 
    std::cout << "\x1b[?25l";
@@ -64,11 +64,11 @@ void Board::printBoard() const{
     std::cout << "  +---+---+---+---+---+---+---+---+\n";
 
 
-    for (int wiersz = 7; wiersz >= 0; wiersz--) {
-        std::cout << wiersz + 1 << " |";
-        for (int kolumna = 0; kolumna < 8; kolumna++) {
-            int square = wiersz * 8 + kolumna;
-            int piece = szachownica[square];
+    for (int rank = 7; rank >= 0; rank--) {
+        std::cout << rank + 1 << " |";
+        for (int file = 0; file < 8; file++) {
+            int square = rank * 8 + file;
+            int piece = chessboard[square];
 
             std::cout << " " << pieceChars[piece] << " |";
         }
@@ -77,235 +77,235 @@ void Board::printBoard() const{
     std::cout << "\n";
 }
 
-void Board::MakeMove(Move& ruch) {
+void Board::makeMove(Move& move) {
 
-    ruch.poprzedniaBialaKrotka  = prawaBialeKrotka;
-    ruch.poprzedniaBialaDluga   = prawaBialeDluga;
-    ruch.poprzedniaCzarnaKrotka = prawaCzarneKrotka;
-    ruch.poprzedniaCzarnaDluga  = prawaCzarneDluga;
+    move.prevWhiteKingside  = whiteKingsideCastlingRights;
+    move.prevWhiteQueenside = whiteQueensideCastlingRights;
+    move.prevBlackKingside  = blackKingsideCastlingRights;
+    move.prevBlackQueenside = blackQueensideCastlingRights;
 
-    ruch.poprzedniPolRuchow50 = polRuchow50;
+    move.prevHalfMoveClock = halfmoveClock;
 
-    if (ruch.ktoraFigura == W_PAWN || ruch.ktoraFigura == B_PAWN || ruch.ktoraFiguraZbita != EMPTY) {
-        polRuchow50 = 0;
+    if (move.movedPiece == W_PAWN || move.movedPiece == B_PAWN || move.capturedPiece != EMPTY) {
+        halfmoveClock = 0;
     } else {
-        polRuchow50++;
+        halfmoveClock++;
     }
 
-    ruch.stareEnPassantSquare = enPassantSquare; //zapisujemy stary stan
-    enPassantSquare = 64;                        //kasujemy pole na nowy ruch
+    move.oldEnPassantSquare = enPassantSquare; //old state
+    enPassantSquare = 64;
 
-    if (ruch.ktoraFigura == W_PAWN && (ruch.naPole - ruch.zPola == 16)) {
-        enPassantSquare = ruch.zPola + 8;
+    if (move.movedPiece == W_PAWN && (move.toSquare - move.fromSquare == 16)) {
+        enPassantSquare = move.fromSquare + 8;
     }
-    else if (ruch.ktoraFigura == B_PAWN && (ruch.zPola - ruch.naPole == 16)) {
-        enPassantSquare = ruch.zPola - 8;
+    else if (move.movedPiece == B_PAWN && (move.fromSquare - move.toSquare == 16)) {
+        enPassantSquare = move.fromSquare - 8;
     }
 
-    //usuwamy figure z pola startowego i kladzeimy na docelowym
-    szachownica[ruch.naPole] = ruch.ktoraFigura;
-    szachownica[ruch.zPola] = EMPTY;
+    //removing piece from starting postion and plaicing it on new postion
+    chessboard[move.toSquare] = move.movedPiece;
+    chessboard[move.fromSquare] = EMPTY;
 
-    if (ruch.EnPassant) {
-        if (ruch.ktoraFigura == W_PAWN) {
-            szachownica[ruch.naPole - 8] = EMPTY;
+    if (move.enPassant) {
+        if (move.movedPiece == W_PAWN) {
+            chessboard[move.toSquare - 8] = EMPTY;
         }
         else{
-          szachownica[ruch.naPole + 8] = EMPTY;
+          chessboard[move.toSquare + 8] = EMPTY;
         }
     }
 
-    //Promocja (podmiana figury)
-    if (ruch.promotedPiece != EMPTY) {
-        szachownica[ruch.naPole] = ruch.promotedPiece;
+    //promotion swithcing pieces
+    if (move.promotedPiece != EMPTY) {
+        chessboard[move.toSquare] = move.promotedPiece;
     }
 
-    //reczny zapis roszady
-    if (ruch.Castling) {
-             if (ruch.naPole == G1) { szachownica[F1] = W_ROOK; szachownica[H1] = EMPTY; } //biala krotka
-        else if (ruch.naPole == C1) { szachownica[D1] = W_ROOK; szachownica[A1] = EMPTY; } //biala dluga
-        else if (ruch.naPole == G8) { szachownica[F8] = B_ROOK; szachownica[H8] = EMPTY; } //czarna krotka
-        else if (ruch.naPole == C8) { szachownica[D8] = B_ROOK; szachownica[A8] = EMPTY; } //czarna dluga
+    //castling
+    if (move.castling) {
+             if (move.toSquare == G1) { chessboard[F1] = W_ROOK; chessboard[H1] = EMPTY; } //white short
+        else if (move.toSquare == C1) { chessboard[D1] = W_ROOK; chessboard[A1] = EMPTY; } //white long
+        else if (move.toSquare == G8) { chessboard[F8] = B_ROOK; chessboard[H8] = EMPTY; } //black short
+        else if (move.toSquare == C8) { chessboard[D8] = B_ROOK; chessboard[A8] = EMPTY; } //black long
     }
-    if (ruch.ktoraFigura == W_KING) { prawaBialeKrotka = false; prawaBialeDluga = false; }
-    if (ruch.ktoraFigura == B_KING) { prawaCzarneKrotka = false; prawaCzarneDluga = false; }
+    if (move.movedPiece == W_KING) { whiteKingsideCastlingRights = false; whiteQueensideCastlingRights = false; }
+    if (move.movedPiece == B_KING) { blackKingsideCastlingRights = false; blackQueensideCastlingRights = false; }
 
-    if (ruch.zPola == A1 || ruch.naPole == A1) prawaBialeDluga = false;
-    if (ruch.zPola == H1 || ruch.naPole == H1) prawaBialeKrotka = false;
-    if (ruch.zPola == A8 || ruch.naPole == A8) prawaCzarneDluga = false;
-    if (ruch.zPola == H8 || ruch.naPole == H8) prawaCzarneKrotka = false;
+    if (move.fromSquare == A1 || move.toSquare == A1) whiteQueensideCastlingRights = false;
+    if (move.fromSquare == H1 || move.toSquare == H1) whiteKingsideCastlingRights = false;
+    if (move.fromSquare == A8 || move.toSquare == A8) blackQueensideCastlingRights = false;
+    if (move.fromSquare == H8 || move.toSquare == H8) blackKingsideCastlingRights = false;
 }
 
-void Board::UnmakeMove(Move ruch) {
-    //powrot figury na pole startowe
-    szachownica[ruch.naPole] = EMPTY;
+void Board::unmakeMove(Move move) {
+    //piece retruning to starting postion
+    chessboard[move.toSquare] = EMPTY;
 
-    //cofanie zbicia lub usuwanie figuy z promocji
-    szachownica[ruch.zPola] = ruch.ktoraFigura;
+    //reversing capture or promotion
+    chessboard[move.fromSquare] = move.movedPiece;
 
-    if (ruch.EnPassant) {
+    if (move.enPassant) {
         //enpassant cofanie piona
-        if (ruch.ktoraFigura == W_PAWN) {
-            szachownica[ruch.naPole - 8] = ruch.ktoraFiguraZbita;
+        if (move.movedPiece == W_PAWN) {
+            chessboard[move.toSquare - 8] = move.capturedPiece;
         } else {
-            szachownica[ruch.naPole + 8] = ruch.ktoraFiguraZbita;
+            chessboard[move.toSquare + 8] = move.capturedPiece;
         }
     }
-    else if (ruch.ktoraFiguraZbita != EMPTY) {
-        //zwykle bicie
-        szachownica[ruch.naPole] = ruch.ktoraFiguraZbita;
+    else if (move.capturedPiece != EMPTY) {
+        //normal capture
+        chessboard[move.toSquare] = move.capturedPiece;
     }
 
 
-    //cofanie roszady
-    if (ruch.Castling) {
-             if (ruch.naPole == G1) { szachownica[H1] = W_ROOK; szachownica[F1] = EMPTY; } //biala krotka
-        else if (ruch.naPole == C1) { szachownica[A1] = W_ROOK; szachownica[D1] = EMPTY; } //biala dluga
-        else if (ruch.naPole == G8) { szachownica[H8] = B_ROOK; szachownica[F8] = EMPTY; } //czarna krotka
-        else if (ruch.naPole == C8) { szachownica[A8] = B_ROOK; szachownica[D8] = EMPTY; } //czarna dluga
+    //reversing castling
+    if (move.castling) {
+             if (move.toSquare == G1) { chessboard[H1] = W_ROOK; chessboard[F1] = EMPTY; } //white short
+        else if (move.toSquare == C1) { chessboard[A1] = W_ROOK; chessboard[D1] = EMPTY; } //white long
+        else if (move.toSquare == G8) { chessboard[H8] = B_ROOK; chessboard[F8] = EMPTY; } //black short
+        else if (move.toSquare == C8) { chessboard[A8] = B_ROOK; chessboard[D8] = EMPTY; } //black long
     }
-    //cofanie licnzika
-    polRuchow50 = ruch.poprzedniPolRuchow50;
+    //reversing counter
+    halfmoveClock = move.prevHalfMoveClock;
 
-    //prawo do enpassant
-    enPassantSquare = ruch.stareEnPassantSquare;
-    //prawo do roszady
-    prawaBialeKrotka = ruch.poprzedniaBialaKrotka;
-    prawaBialeDluga = ruch.poprzedniaBialaDluga;
-    prawaCzarneKrotka = ruch.poprzedniaCzarnaKrotka;
-    prawaCzarneDluga = ruch.poprzedniaCzarnaDluga;
+    // enpassant law
+    enPassantSquare = move.oldEnPassantSquare;
+    //castling law
+    whiteKingsideCastlingRights = move.prevWhiteKingside;
+    whiteQueensideCastlingRights = move.prevWhiteQueenside;
+    blackKingsideCastlingRights = move.prevBlackKingside;
+    blackQueensideCastlingRights = move.prevBlackQueenside;
 }
 
-bool Board::czyPoleJestAtakowane(int pole, int kolorAtakujacego) const{
-//Sprawdza, czy dane pole jest atakowane przez dowolną figure przeciwnika, na podstawie ich regul ruchu
+bool Board::isSquareAttacked(int square, int attackingColor) const{
+//Checks if a given square is attacked by any opponent piece, based on their move rules
 
- //Skoczek
-    int ruchyKonia[8] = {6, 10, 15, 17, -6, -10, -15, -17};
-    int xStarowe = pole % 8;
-    int yStarowe = pole / 8;
+ //Knight
+    int knightMoves[8] = {6, 10, 15, 17, -6, -10, -15, -17};
+    int startX = square % 8;
+    int startY = square / 8;
 
     for (int i = 0; i < 8; i++) {
-        int cel = pole + ruchyKonia[i];
-        if (cel >= 0 && cel < 64) {
-            int xCel = cel % 8;
-            int yCel = cel / 8;
-            if (std::abs(xStarowe - xCel) + std::abs(yStarowe - yCel) == 3) {
-                int figura = szachownica[cel];
-                if (figura != EMPTY) {
-                    //sprawdzamy czy to wrogi skoczek
-                    bool toWrogiSkoczek = (kolorAtakujacego == WHITE && figura == W_KNIGHT) ||
-                                          (kolorAtakujacego == BLACK && figura == B_KNIGHT);
-                    if (toWrogiSkoczek) return true;
+        int target = square + knightMoves[i];
+        if (target >= 0 && target < 64) {
+            int targetX = target % 8;
+            int targetY = target / 8;
+            if (std::abs(startX - targetX) + std::abs(startY - targetY) == 3) {
+                int piece = chessboard[target];
+                if (piece != EMPTY) {
+                    //check if it is an enemy knight
+                    bool isEnemyKnight = (attackingColor == WHITE && piece == W_KNIGHT) ||
+                                         (attackingColor == BLACK && piece == B_KNIGHT);
+                    if (isEnemyKnight) return true;
                 }
             }
         }
     }
-    //krol
-    int ruchyKrola[8] = { 8, -8, 1, -1, 9, 7, -7, -9 };
+    //king
+    int kingMoves[8] = { 8, -8, 1, -1, 9, 7, -7, -9 };
     for (int i = 0; i < 8; i++) {
-        int cel = pole + ruchyKrola[i];
-        if (cel >= 0 && cel < 64) {
-            int xCel = cel % 8;
-            int yCel = cel / 8;
-            if (std::abs(xStarowe - xCel) <= 1 && std::abs(yStarowe - yCel) <= 1) {
-                int figura = szachownica[cel];
-                if ((kolorAtakujacego == WHITE && figura == W_KING) ||
-                    (kolorAtakujacego == BLACK && figura == B_KING)) {
+        int target = square + kingMoves[i];
+        if (target >= 0 && target < 64) {
+            int targetX = target % 8;
+            int targetY = target / 8;
+            if (std::abs(startX - targetX) <= 1 && std::abs(startY - targetY) <= 1) {
+                int piece = chessboard[target];
+                if ((attackingColor == WHITE && piece == W_KING) ||
+                    (attackingColor == BLACK && piece == B_KING)) {
                     return true;
                 }
             }
         }
     }
-    //pion
-    //warunki sprawdzajce atak z lewej i prawej
-    if(kolorAtakujacego == WHITE){
-        if(pole % 8 != 0 && pole - 9 >= 0 && szachownica[pole - 9] == W_PAWN) return true;
-        if(pole % 8 != 7 && pole - 7 >= 0 && szachownica[pole - 7] == W_PAWN) return true;
+    //pawn
+    //conditions checking left and right attack
+    if(attackingColor == WHITE){
+        if(square % 8 != 0 && square - 9 >= 0 && chessboard[square - 9] == W_PAWN) return true;
+        if(square % 8 != 7 && square - 7 >= 0 && chessboard[square - 7] == W_PAWN) return true;
 
     }
     else{
-        if(pole % 8 != 0 && pole + 7 < 64 && szachownica[pole + 7] == B_PAWN) return true;
-        if(pole % 8 != 7 && pole + 9 < 64 && szachownica[pole + 9] == B_PAWN) return true;
+        if(square % 8 != 0 && square + 7 < 64 && chessboard[square + 7] == B_PAWN) return true;
+        if(square % 8 != 7 && square + 9 < 64 && chessboard[square + 9] == B_PAWN) return true;
     }
-    //slizgajace figury
-    int kierunki[8] = { 8, -8, 1, -1, 9, -9, 7, -7};
+    //sliding pieces
+    int directions[8] = { 8, -8, 1, -1, 9, -9, 7, -7};
 
     for(int i = 0; i < 8; i++){
-        int kierunek = kierunki[i];
-        int aktualnePole = pole;
+        int dir = directions[i];
+        int currentSquare = square;
 
         while (true){
-            int cel = aktualnePole + kierunek;
-            if(cel < 0 || cel > 63) break;
+            int target = currentSquare + dir;
+            if(target < 0 || target > 63) break;
 
-            int xAktualny = aktualnePole % 8;
-            int yAktualny = aktualnePole / 8;
-            int xCel = cel % 8;
-            int yCel = cel / 8;
+            int currentX = currentSquare % 8;
+            int currentY = currentSquare / 8;
+            int targetX = target % 8;
+            int targetY = target / 8;
 
-            if(std::abs(xCel - xAktualny) > 1 || std::abs(yCel - yAktualny) > 1) break;
+            if(std::abs(targetX - currentX) > 1 || std::abs(targetY - currentY) > 1) break;
 
-            int figura = szachownica[cel];
-            if(figura != EMPTY){
+            int piece = chessboard[target];
+            if(piece != EMPTY){
 
-                int jejKolor = WHITE;
-                if (figura >= B_PAWN && figura <= B_KING) jejKolor = BLACK;
+                int pieceColor = WHITE;
+                if (piece >= B_PAWN && piece <= B_KING) pieceColor = BLACK;
 
-                if (jejKolor == kolorAtakujacego) {
-                    //patrzymy po indekasch peirwszych czyli proste linie
+                if (pieceColor == attackingColor) {
+                    //checking straight lines
                     if (i <= 3) {
-                        if (figura == W_ROOK || figura == B_ROOK || figura == W_QUEEN || figura == B_QUEEN) return true;
+                        if (piece == W_ROOK || piece == B_ROOK || piece == W_QUEEN || piece == B_QUEEN) return true;
                     }
-                    //reszta indeskow proste skosy
+                    //remaining diagonals
                     else {
-                        if (figura == W_BISHOP || figura == B_BISHOP || figura == W_QUEEN || figura == B_QUEEN) return true;
+                        if (piece == W_BISHOP || piece == B_BISHOP || piece == W_QUEEN || piece == B_QUEEN) return true;
                     }
                 }
                 break;
             }
-            aktualnePole = cel;
+            currentSquare = target;
         }
 
     }
 return false;
 }
 
-int Board::znajdzKrola(int kolor) const {
-    int szukanaFigura = (kolor == WHITE) ? W_KING : B_KING;
+int Board::findKing(int color) const {
+    int targetPiece = (color == WHITE) ? W_KING : B_KING;
     for (int i = 0; i < 64; ++i) {
-        if (szachownica[i] == szukanaFigura) {
+        if (chessboard[i] == targetPiece) {
             return i;
         }
     }
-    return SQ_NONE; // Zabezpieczenie, choć król zawsze powinien być na planszy
+    return SQ_NONE; //safeguard, although the king should always be on the board
 }
 
-void Board::zapiszPozycje(int kolorNaRuchu){
- PozycjaZapis zapis;
- for(int i = 0; i < 64; i++) zapis.szachownica[i] = szachownica[i];
- zapis.kolorNaRuchu = kolorNaRuchu;
- zapis.bK = prawaBialeKrotka;
- zapis.bQ = prawaBialeDluga;
- zapis.cK = prawaCzarneKrotka;
- zapis.cQ = prawaCzarneDluga;
- zapis.enPassant = enPassantSquare;
- historiaPozycji.push_back(zapis);
+void Board::savePosition(int sideToMove){
+ PositionState state;
+ for(int i = 0; i < 64; i++) state.chessboard[i] = chessboard[i];
+ state.sideToMove = sideToMove;
+ state.wK = whiteKingsideCastlingRights;
+ state.wQ = whiteQueensideCastlingRights;
+ state.bK = blackKingsideCastlingRights;
+ state.bQ = blackQueensideCastlingRights;
+ state.enPassant = enPassantSquare;
+ positionHistory.push_back(state);
 
 }
 
-void Board::wycofajPozycje(){
- if(!historiaPozycji.empty()){
-    historiaPozycji.pop_back();
+void Board::undoPosition(){
+ if(!positionHistory.empty()){
+    positionHistory.pop_back();
  }
 }
 
-bool Board::czyPowtorzenieTrzykrotne() const {
-    if (historiaPozycji.empty()) return false;
-    const PozycjaZapis& aktualna = historiaPozycji.back();
+bool Board::isThreefoldRepetition() const {
+    if (positionHistory.empty()) return false;
+    const PositionState& current = positionHistory.back();
 
-    int licznik = 0;
-    for (const PozycjaZapis& p : historiaPozycji) {
-        if (p.rownaSie(aktualna)) licznik++;
+    int count = 0;
+    for (const PositionState& p : positionHistory) {
+        if (p.equals(current)) count++;
     }
-    return licznik >= 3;
+    return count >= 3;
 }

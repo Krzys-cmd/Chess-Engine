@@ -1,74 +1,74 @@
 #pragma once
 #include "types.h"
-#include "string"
+#include <string>
 #include <vector>
 
 struct Move {
-    int zPola;
-    int naPole;
-    int ktoraFigura;
-    int ktoraFiguraZbita;
+    int fromSquare;
+    int toSquare;
+    int movedPiece;
+    int capturedPiece;
 
-    //flagi specjalne
-    bool Castling  = false; //roszada
-    bool EnPassant = false; //bicie w locie
-    int promotedPiece = EMPTY; // promocja na jaka figure (EMPTY) brak promocji
+    //special flags
+    bool castling = false;
+    bool enPassant = false;
+    int promotedPiece = EMPTY; // (EMPTY) no promotion
 
-    int stareEnPassantSquare = 64;
+    int oldEnPassantSquare = 64;
 
-    bool poprzedniaBialaKrotka  = false;
-    bool poprzedniaBialaDluga   = false;
-    bool poprzedniaCzarnaKrotka = false;
-    bool poprzedniaCzarnaDluga  = false;
+    bool prevWhiteKingside = false;
+    bool prevWhiteQueenside = false;
+    bool prevBlackKingside = false;
+    bool prevBlackQueenside = false;
 
-    int poprzedniPolRuchow50 = 0;
+    int prevHalfMoveClock = 0;
 };
 
-struct PozycjaZapis {
-    int szachownica[64];
-    int kolorNaRuchu;
-    bool bK, bQ, cK, cQ;
+struct PositionState {
+    int chessboard[64];
+    int sideToMove;
+    bool wK, wQ, bK, bQ;
     int enPassant;
 
-    bool rownaSie(const PozycjaZapis& inna) const {
+    bool equals(const PositionState& other) const {
         for (int i = 0; i < 64; i++) {
-            if (szachownica[i] != inna.szachownica[i]) return false;
+            if (chessboard[i] != other.chessboard[i]) return false;
         }
-        return kolorNaRuchu == inna.kolorNaRuchu &&
-               bK == inna.bK && bQ == inna.bQ &&
-               cK == inna.cK && cQ == inna.cQ &&
-               enPassant == inna.enPassant;
+        return sideToMove == other.sideToMove &&
+               wK == other.wK && wQ == other.wQ &&
+               bK == other.bK && bQ == other.bQ &&
+               enPassant == other.enPassant;
     }
 };
 
 class Board {
 public:
 
-    int szachownica[64];
+    int chessboard[64];
     int enPassantSquare = 64;
 
-    //flagi roszady
-    bool prawaBialeKrotka;
-    bool prawaBialeDluga;
-    bool prawaCzarneKrotka;
-    bool prawaCzarneDluga;
+    //castling flags
+    bool whiteKingsideCastlingRights;
+    bool whiteQueensideCastlingRights;
+    bool blackKingsideCastlingRights;
+    bool blackQueensideCastlingRights;
 
-    int polRuchow50 = 0;
-    std::vector<PozycjaZapis> historiaPozycji;
+    int halfmoveClock = 0;
+    std::vector<PositionState> positionHistory;
 
     Board();
 
-    int wczytajFEN(const std::string& fen);//pomocnicza funckja
-    int znajdzKrola(int kolor) const;
-    void StartPostions();//pozycja stratowa
-    void printBoard() const; //rysowanie tabeli ANSI
-    void UnmakeMove(Move ruch);
-    void MakeMove(Move& ruch);
-    bool czyPoleJestAtakowane(int pole, int kolorAtakujacego) const;
+    int loadFEN(const std::string& fen);//helper
+    int findKing(int color) const;
+    void startPositions();
+    void printBoard() const; // ANSI print (testing)
+    void unmakeMove(Move move);
+    void makeMove(Move& move);
+    bool isSquareAttacked(int square, int attackingColor) const;
 
-    void zapiszPozycje(int kolorNaRuchu);
-    void wycofajPozycje();
-    bool czyPowtorzenieTrzykrotne() const;
-    bool czyRemis50Ruchow() const { return polRuchow50 >= 100; }
+    void savePosition(int sideToMove);
+    void undoPosition();
+    bool isThreefoldRepetition() const;
+    bool is50MoveDraw() const { return halfmoveClock >= 100; }
 
 };

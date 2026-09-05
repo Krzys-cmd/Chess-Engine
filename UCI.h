@@ -6,25 +6,24 @@
 
 class UCI{
 public:
-    UCI(Board& board, MoveGen& gen, Search& ser);
+    UCI(Board& board, MoveGen& gen, Search& search);
 
-    void uruchomPetle(); //glowna petla wczytuajca komendy
+    void runLoop(); //main loop
 private:
     Board& board;
     MoveGen& gen;
-    Search& ser;
+    Search& search;
 
-    int kolorNaRuchu;
+    int activeColor;
 
-    void obslugaUci();
-    void obslugaIsReady();
-    void obslugaUciNewGame();
-    void obslugaPosition(std::istringstream& iss);
-    void obslugaGo(std::istringstream& iss);
+    void handleUci();
+    void handleIsReady();
+    void handleUciNewGame();
+    void handlePosition(std::istringstream& iss);
+    void handleGo(std::istringstream& iss);
 
-    int poleZTekstu(const std::string& s);
-    std::string poleNaTekst(int pole);
-    std::string ruchNaTekst(const Move& m);
-    bool znajdzRuch(const std::string& tekst, Move& wynik);
+    int parseSquare(const std::string& s);
+    std::string squareToString(int square);
+    std::string moveToString(const Move& m);
+    bool findMove(const std::string& text, Move& result);
 };
-

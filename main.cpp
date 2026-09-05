@@ -11,7 +11,7 @@ int main()
     Search ser(board, gen);
     UCI uci(board, gen, ser);
 
-    uci.uruchomPetle();
+    uci.runLoop();
 
     return 0;
 }

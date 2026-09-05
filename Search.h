@@ -5,29 +5,29 @@
 #include <iostream>
 
 const int inf = 1000000;
-const int MatWartosc = 100000;
+const int mateValue = 100000;
 
 class Search {
  public:
     Search(Board& board, MoveGen& gen);
 
-    Move szukajNajlepszegoRuchu(int kolor, int depth);
-    Move szukajRuchWCzasie(int kolor, long long limitCzasuMs);
+    Move findBestMove(int color, int depth);
+    Move searchTimedMove(int color, long long timeLimitMs);
 
-    int negamax(int kolor, int depth, int polRuch, int alpha, int beta , Move* najlepszyRuchOut = nullptr);
-    long long policzWezly() const { return wezly; }
+    int negamax(int color, int depth, int ply, int alpha, int beta, Move* bestMoveOut = nullptr);
+    long long getNodeCount() const { return nodes; }
  private:
     Board& board;
     MoveGen& gen;
-    long long wezly = 0;
+    long long nodes = 0;
 
-    int ocenPozycje(int kolor) const;
+    int evaluatePosition(int color) const;
 
-    int wartoscRuchuMVVLVA(const Move& m) const;
+    int getMVVLVAMoveValue(const Move& m) const;
 
-    std::chrono::steady_clock::time_point czasStartu;
-    long long limitCzasuMs = 0;
-    bool przerwane = false;
-    bool minalCzas();
+    std::chrono::steady_clock::time_point startTime;
+    long long timeLimitMs = 0;
+    bool interrupted = false;
+    bool isTimeUp();
 
 };

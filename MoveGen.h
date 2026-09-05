@@ -9,17 +9,17 @@ class MoveGen {
 public:
     MoveGen(Board& board);
 
-    void generatePseudoLegal(int kolorFiguryRuszanej, std::vector<Move>& out);
-    void generateLegal(int kolor, std::vector<Move>& out);//filr legalnych ruchow
+    void generatePseudoLegal(int movingPieceColor, std::vector<Move>& out);
+    void generateLegal(int color, std::vector<Move>& out);//legals moves filter
 
 private:
-    Board& board; //orginal szachownicy
+    Board& board; //orginal chessboard
 
-    //funkcje dla figur
-    void generujRuchyKnight(int pole, int mojKolor, std::vector<Move>& out);
-    void generujRuchyKing(int pole, int mojKolor, std::vector<Move>& out);
-    void generujRuchyPawn(int pole, int mojKolor, std::vector<Move>& out);
-    void generujRuchySliding(int pole, int mojKolorr, int rodzajFigury, std::vector<Move>& out);//goniec wieza hetmamn
+    //move gen for each piece
+    void generateKnightMoves(int square, int myColor, std::vector<Move>& out);
+    void generateKingMoves(int square, int myColor, std::vector<Move>& out);
+    void generatePawnMoves(int square, int myColor, std::vector<Move>& out);
+    void generateSlidingMoves(int square, int myColor, int pieceType, std::vector<Move>& out);//goniec wieza hetmamn
 
-    int kolorFigury(int piece) const;
+    int getPieceColor(int piece) const;
 };
