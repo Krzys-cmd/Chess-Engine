@@ -1,26 +1,25 @@
-<h3 align="center">Silnik szachowy(C++)</h3>
+<h3 align="center">Chess Engine (C++)</h3>
 
 <p align="center">
-Silnik szachowy pisany od zera w **C++17**, oparty na płaskiej reprezentacji planszy (tablica 64 pól, tzw. mailbox) z walidacją granic przez współrzędne x/y, oraz generatorze ruchów zgodnym z pełnymi zasadami gry - łącznie z roszadą, biciem w przelocie i promocją.
+A chess engine written from scratch in <b>C++23</b>, based on a flat board representation (64-square array, so-called mailbox) with boundary validation via x/y coordinates, and a move generator compliant with full game rules - including castling, en passant, and promotion.
 </p>
 
-##  Główne funkcje
+##  Key Features
 
-| Funkcja | Opis |
+| Feature | Description |
 |---|---|
-| **Reprezentacja planszy** | Tablica jednowymiarowa `int[64]` (indeksy A1-H8) przechowująca stan figur, z pełnym zestawem flag stanu gry: prawa do roszady (osobno dla obu stron i skrzydeł) oraz pole bicia w przelocie (`enPassantSquare`). |
-| **Generator pseudo-legalnych ruchów** | Osobne funkcje generujące ruchy dla każdego typu figury - skoczka i króla poprzez tablice przesunięć indeksu, gońca/wieży/hetmana poprzez iteracyjne „ślizganie się" w 8 kierunkach aż do napotkania przeszkody lub krawędzi planszy. |
-| **Filtr ruchów legalnych** | Weryfikacja każdego pseudo-legalnego ruchu metodą *make-check-unmake*: ruch jest wykonywany na planszy, sprawdzana jest ekspozycja własnego króla na szach, a następnie ruch jest cofany - eliminuje to ruchy odsłaniające króla (spinki). Generator zapisuje wyniki do przekazanego z zewnątrz wektora (`out`-parametr) zamiast zwracać nową kopię listy przy każdym wywołaniu, co eliminuje zbędne alokacje pamięci w gorącej ścieżce przeszukiwania. |
-| **Detekcja atakowanych pól** | Funkcja `czyPoleJestAtakowane` sprawdza zagrożenie danego pola przez dowolną figurę przeciwnika - osobna logika dla skoczka, króla, pionów (asymetryczny kierunek bicia biały/czarny) oraz figur ślizgających się (goniec/wieża/hetman) z zatrzymaniem na pierwszej napotkanej przeszkodzie. |
-| **Pełna obsługa ruchów specjalnych** | Roszada (krótka i długa, z weryfikacją pustych pól oraz braku ataku na pola przejścia króla), bicie w przelocie (en passant) z poprawnym wyznaczaniem pola docelowego na podstawie ostatniego ruchu piona o dwa pola, oraz promocja piona do każdej z czterech figur. |
-| **Odwracalność ruchów (Make/Unmake)** | Każdy ruch niesie ze sobą pełny kontekst potrzebny do cofnięcia stanu: zbitą figurę, poprzednie prawa do roszady oraz poprzednie pole en passant - pozwala to na przeszukiwanie drzewa gry bez kopiowania całej planszy przy każdym ruchu. |
-| **Przeszukiwanie drzewa gry (Negamax + Alfa-Beta)** | Rekurencyjne przeszukiwanie wariantów z obcinaniem gałęzi (alfa-beta pruning), skalowaniem wartości mata względem głębokości oraz wykrywaniem remisów (reguła 50 posunięć, trzykrotne powtórzenie pozycji). |
-| **Iterative Deepening + zarządzanie czasem** | Silnik pogłębia przeszukiwanie stopniowo (1, 2, 3…), publikując na bieżąco najlepszy dotychczas znaleziony ruch - dzięki temu zawsze dysponuje sensownym ruchem, nawet jeśli czas się skończy w trakcie głębszej iteracji. Limit czasu sprawdzany jest co 2048 węzłów (optymalizacja bitowa) bez zbędnego narzutu na każdą iterację. |
-| **Protokół UCI** | Pełna obsługa podstawowych komend interfejsu **Universal Chess Interface** (`uci`, `isready`, `position`, `go`, `ucinewgame`) - silnik podłącza się bezpośrednio do zewnętrznych GUI (Arena, CuteChess) oraz platform online obsługujących silniki UCI. |
-| **Obsługa FEN** | Wczytywanie dowolnej pozycji z notacji FEN (`wczytajFEN`), co pozwala testować silnik na konkretnych scenariuszach taktycznych, a nie tylko od pozycji startowej. |
-| **Detekcja remisu przez powtórzenie pozycji** | Po każdym ruchu silnik zapisuje migawkę stanu planszy (`zapiszPozycje`) do historii - porównanie kolejnych migawek pozwala wykryć trzykrotne powtórzenie tej samej pozycji (`czyPowtorzenieTrzykrotne`), niezależnie od licznika reguły 50 posunięć. |
-| **Testy generatora ruchów (Perft)** | Poprawność generatora zweryfikowana algorytmem **perft** - zliczaniem wszystkich węzłów drzewa gry do zadanej głębokości i porównaniem z wartościami referencyjnymi, co jest standardową metodą wykrywania błędów w logice ruchów specjalnych (roszada, en passant, promocja) niewidocznych przy zwykłej grze testowej. |
-
+| **Board Representation** | A one-dimensional `int[64]` array (A1-H8 indices) storing piece states, featuring a full set of game state flags: castling rights (separate for both sides and flanks) and the en passant target square (`enPassantSquare`). |
+| **Pseudo-Legal Move Generator** | Separate functions generating moves for each piece type - knights and kings via index offset arrays; bishops/rooks/queens by iteratively "sliding" in 8 directions until hitting an obstacle or board edge. |
+| **Legal Move Filter** | Verification of every pseudo-legal move using the *make-check-unmake* method: the move is played on the board, own king's exposure to check is evaluated, and then the move is taken back - this eliminates moves that expose the king (pins). The generator writes results to an externally provided vector (`out`-parameter) instead of returning a new copy of the list on each call, eliminating redundant memory allocations in the hot search path. |
+| **Attacked Square Detection** | The `czyPoleJestAtakowane` function checks if a given square is threatened by any enemy piece - utilizing separate logic for knights, kings, pawns (asymmetrical capture direction for white/black), and sliding pieces (bishop/rook/queen) stopping at the first encountered obstacle. |
+| **Full Special Move Support** | Castling (kingside and queenside, with empty square and king transit path attack verification), en passant with correct target square calculation based on the last two-square pawn advance, and pawn promotion to all four minor/major pieces. |
+| **Move Reversibility (Make/Unmake)** | Every move carries the full context required to revert the state: the captured piece, previous castling rights, and the previous en passant square - this allows searching the game tree without copying the entire board array for every move. |
+| **Game Tree Search (Negamax + Alpha-Beta)** | Recursive variant search with branch pruning (alpha-beta pruning), scaling mate values by depth, and draw detection (50-move rule, three-fold repetition). |
+| **Iterative Deepening + Time Management** | The engine deepens its search progressively (1, 2, 3...), constantly publishing the best move found so far - ensuring it always has a reasonable move ready even if time runs out during a deeper iteration. The time limit is checked every 2048 nodes (bitwise optimization) without adding unnecessary overhead to every iteration. |
+| **UCI Protocol** | Full support for basic **Universal Chess Interface** commands (`uci`, `isready`, `position`, `go`, `ucinewgame`) - the engine connects directly to external GUIs (Arena, CuteChess) and online platforms supporting UCI engines. |
+| **FEN Support** | Loading arbitrary positions from FEN notation (`wczytajFEN`), which allows testing the engine on specific tactical scenarios rather than just from the starting position. |
+| **Draw Detection by Repetition** | After every move, the engine saves a board state snapshot (`zapiszPozycje`) to history - comparing subsequent snapshots allows it to detect a three-fold repetition of the exact same position (`czyPowtorzenieTrzykrotne`), independent of the 50-move rule counter. |
+| **Move Generator Tests (Perft)** | The generator's correctness is verified using the **perft** algorithm - counting all game tree nodes up to a specified depth and comparing them against reference values. This is a standard method for catching bugs in special move logic (castling, en passant, promotion) that remain invisible during standard test play. |
 
 ---
 
@@ -164,11 +163,10 @@ Taki układ referencji (a nie kopii) gwarantuje, że wszystkie komponenty zawsze
 
 ---
 
-##  Status projektu i plany rozwoju
+##  Status projektu 
 
 Silnik posiada w pełni zweryfikowaną (testami **perft**) reprezentację planszy i generator ruchów, działające przeszukiwanie Negamax z alfa-beta oraz pełne podłączenie do protokołu UCI - może już grać partie w zewnętrznych GUI. Kolejne etapy rozwoju skupiają się na sile gry:
 
-- [ ] **Quiescence search** - rozszerzenie oceny liścia drzewa o dogrywanie bić, eliminujące efekt horyzontu przy taktycznych wymianach
 - [ ] Piece-Square Tables - ocena pozycyjna figur, nie tylko materiał
 - [ ] Tablica transpozycji (Zobrist hashing)
 - [ ] Null-move pruning i Late Move Reduction (LMR)
