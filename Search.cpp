@@ -8,20 +8,142 @@ static const int pieceValues[13] = {
     100, 320, 330, 500, 900, 0,
     100, 320, 330, 500, 900, 0
 };
+//values for postions on board
+static const int pawnPST[64] = {
+     0,  0,  0,  0,  0,  0,  0,  0,
+     5, 10, 10,-20,-20, 10, 10,  5,
+     5, -5,-10,  0,  0,-10, -5,  5,
+     0,  0,  0, 20, 20,  0,  0,  0,
+     5,  5, 10, 25, 25, 10,  5,  5,
+    10, 10, 20, 30, 30, 20, 10, 10,
+    50, 50, 50, 50, 50, 50, 50, 50,
+     0,  0,  0,  0,  0,  0,  0,  0
+};
+
+static const int knightPST[64] = {
+    -50,-40,-30,-30,-30,-30,-40,-50,
+    -40,-20,  0,  5,  5,  0,-20,-40,
+    -30,  5, 10, 15, 15, 10,  5,-30,
+    -30,  0, 15, 20, 20, 15,  0,-30,
+    -30,  5, 15, 20, 20, 15,  5,-30,
+    -30,  0, 10, 15, 15, 10,  0,-30,
+    -40,-20,  0,  0,  0,  0,-20,-40,
+    -50,-40,-30,-30,-30,-30,-40,-50
+};
+
+static const int bishopPST[64] = {
+    -20,-10,-10,-10,-10,-10,-10,-20,
+    -10,  5,  0,  0,  0,  0,  5,-10,
+    -10, 10, 10, 10, 10, 10, 10,-10,
+    -10,  0, 10, 10, 10, 10,  0,-10,
+    -10,  5,  5, 10, 10,  5,  5,-10,
+    -10,  0,  5, 10, 10,  5,  0,-10,
+    -10,  0,  0,  0,  0,  0,  0,-10,
+    -20,-10,-10,-10,-10,-10,-10,-20
+};
+
+static const int rookPST[64] = {
+      0,  0,  0,  5,  5,  0,  0,  0,
+     -5,  0,  0,  0,  0,  0,  0, -5,
+     -5,  0,  0,  0,  0,  0,  0, -5,
+     -5,  0,  0,  0,  0,  0,  0, -5,
+     -5,  0,  0,  0,  0,  0,  0, -5,
+     -5,  0,  0,  0,  0,  0,  0, -5,
+      5, 10, 10, 10, 10, 10, 10,  5,
+      0,  0,  0,  0,  0,  0,  0,  0
+};
+
+static const int queenPST[64] = {
+    -20,-10,-10, -5, -5,-10,-10,-20,
+    -10,  0,  0,  0,  0,  0,  0,-10,
+    -10,  0,  5,  5,  5,  5,  0,-10,
+     -5,  0,  5,  5,  5,  5,  0, -5,
+      0,  0,  5,  5,  5,  5,  0, -5,
+    -10,  5,  5,  5,  5,  5,  0,-10,
+    -10,  0,  5,  0,  0,  0,  0,-10,
+    -20,-10,-10, -5, -5,-10,-10,-20
+};
+
+static const int kingPST[64] = {
+     20, 30, 10,  0,  0, 10, 30, 20,
+     20, 20,  0,  0,  0,  0, 20, 20,
+    -10,-20,-20,-20,-20,-20,-20,-10,
+    -20,-30,-30,-40,-40,-30,-30,-20,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30,
+    -30,-40,-40,-50,-50,-40,-40,-30
+};
+
+static const int* pstArrays[13] = {
+    nullptr,
+    pawnPST, knightPST, bishopPST, rookPST, queenPST, kingPST,  // white (1-6)
+    pawnPST, knightPST, bishopPST, rookPST, queenPST, kingPST   // black (7-12)
+};
 
 int Search::evaluatePosition(int color) const{
- int sum = 0;
- for(int i = 0; i < 64; i++){
-    int piece = board.chessboard[i];
-    if(piece == EMPTY) continue;
+    int whiteScore = 0;
+    int blackScore = 0;
 
-    int value = pieceValues[piece];
-    int pieceColor = (piece >= W_PAWN && piece <= W_KING) ? WHITE : BLACK;
+    for(int i = 0; i < 64; i++){
+        int piece = board.chessboard[i];
+        if(piece == EMPTY) continue;
 
-    if(pieceColor == color) sum += value;
-    else sum -= value;
- }
- return sum;
+        int pieceColor = (piece >= W_PAWN && piece <= W_KING) ? WHITE : BLACK;
+        int square = (pieceColor == WHITE) ? i : (i ^ 56);
+
+        int value = pieceValues[piece] + pstArrays[piece][square];
+
+        if(pieceColor == WHITE) {
+            whiteScore += value;
+        } else {
+            blackScore += value;
+        }
+    }
+    return (color == WHITE) ? (whiteScore - blackScore) : (blackScore - whiteScore);
+}
+
+int Search::quiescence(int color, int alpha, int beta){
+    nodes++;
+
+    if ((nodes & 2047) == 0) {
+        if (isTimeUp()) return 0;
+    }
+    if (interrupted) return 0;
+
+    int standPat = evaluatePosition(color);
+    if (standPat >= beta) return beta;
+    if (standPat > alpha) alpha = standPat;
+
+    std::vector<Move> moves;
+    gen.generateLegal(color, moves);
+
+    std::vector<Move> captures;
+    captures.reserve(moves.size());
+    for (Move& m : moves) {
+        if (m.capturedPiece != EMPTY) captures.push_back(m);
+    }
+
+    std::sort(captures.begin(), captures.end(), [this](const Move& a, const Move& b){
+        return getMVVLVAMoveValue(a) > getMVVLVAMoveValue(b);
+    });
+
+    for (Move& m : captures) {
+        board.makeMove(m);
+        board.savePosition(getOppositeColor(color));
+
+        int score = -quiescence(getOppositeColor(color), -beta, -alpha);
+
+        board.undoPosition();
+        board.unmakeMove(m);
+
+        if (interrupted) break;
+
+        if (score >= beta) return beta;
+        if (score > alpha) alpha = score;
+    }
+
+    return alpha;
 }
 
 int Search::getMVVLVAMoveValue(const Move& m) const{
@@ -71,7 +193,7 @@ int Search::negamax(int color, int depth, int ply, int alpha, int beta , Move* b
 
 
  if(depth == 0){
-    return evaluatePosition(color);
+    return quiescence(color, alpha, beta);
  }
 
  std::sort(moves.begin(), moves.end(), [this](const Move& a, const Move& b){ //using a lambda as the sort key

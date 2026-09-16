@@ -11,6 +11,8 @@ int main()
     Search ser(board, gen);
     UCI uci(board, gen, ser);
 
+
+
     uci.runLoop();
 
     return 0;

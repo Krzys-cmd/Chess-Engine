@@ -22,6 +22,7 @@ class Search {
     long long nodes = 0;
 
     int evaluatePosition(int color) const;
+    int quiescence(int color, int alpha, int beta);
 
     int getMVVLVAMoveValue(const Move& m) const;
 
