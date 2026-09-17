@@ -138,11 +138,14 @@ void UCI::handlePosition(std::istringstream& iss) {
 void UCI::handleGo(std::istringstream& iss) {
     std::string token;
     long long wtime = -1, btime = -1, movetime = -1;
+    long long winc = 0, binc = 0;
     int fixedDepth = -1;
 
     while (iss >> token) {
         if (token == "wtime") iss >> wtime;
         else if (token == "btime") iss >> btime;
+        else if (token == "winc") iss >> winc;
+        else if (token == "binc") iss >> binc;
         else if (token == "movetime") iss >> movetime;
         else if (token == "depth") iss >> fixedDepth;
     }
@@ -157,10 +160,12 @@ void UCI::handleGo(std::istringstream& iss) {
     }
     else {
         long long myTime = (activeColor == WHITE) ? wtime : btime;
+        long long myIncrement = (activeColor == WHITE) ? winc : binc;
         if (myTime <= 0) myTime = 5000;
 
-        long long allocatedTime = myTime / 30;
+        long long allocatedTime = myTime / 30 + myIncrement;
         if (allocatedTime < 50) allocatedTime = 50;
+        if (allocatedTime > myTime - 100) allocatedTime = myTime - 100;
 
         bestMove = search.searchTimedMove(activeColor, allocatedTime);
     }
